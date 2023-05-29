@@ -1,22 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import Container from "@mui/material/Container";
-import {
-  Box,
-  Checkbox,
-  TextField,
-  Button,
-  Grid,
-  Table,
-  TableHead,
-} from "@mui/material";
-import {
-  Switch,
-  TableBody,
-  TableContainer,
-  TableRow,
-  Typography,
-} from "@mui/material";
+import {Box,Checkbox,TextField,Button,Grid,Table,TableHead} from "@mui/material";
+import {TableBody,TableContainer,TableRow,Typography} from "@mui/material";
 import { ArrowDropDown, ArrowDropUp } from "@mui/icons-material";
 import Paper from "@mui/material/Paper";
 import TableCell, { tableCellClasses } from "@mui/material/TableCell";
@@ -47,13 +33,12 @@ const App = () => {
   const [lastname, setLastName] = useState("");
   const [age, setAge] = useState(0);
   const [isChecked, setIsChecked] = useState(false);
-  const [todo, setTodo] = useState(
-    JSON.parse(localStorage.getItem("todo")) || []
-  );
+  const [todo, setTodo] = useState(JSON.parse(localStorage.getItem("todo")) || [] );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
 
   const [sortBy, setSortBy] = useState("");
+  const [editingId, setEditingId] = useState(null)
 
   useEffect(() => {
     localStorage.setItem("todo", JSON.stringify(todo));
@@ -160,6 +145,43 @@ const App = () => {
     return "";
   };
 
+  const handleEdit = (id) =>{
+    setEditingId(id);
+    const editingItem = todo.find((item) => item.id === id);
+    if(editingItem){
+      setFirstname(editingItem.firstname);
+      setLastName(editingItem.lastname);
+      setAge(editingItem.age);
+      setIsChecked(editingItem.checked)
+    }
+  };
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setFirstname('');
+    setLastName('');
+    setAge(0);
+    setIsChecked(false);
+  };
+
+  const handleSaveEdit = (id) => {
+    const updatedTodo = todo.map((item) => {
+      if(item.id === id){
+        return {
+          ...item,
+          firstname,
+          lastname,
+          age,
+          checked: isChecked
+        }
+      }
+      return item;
+    });
+    setTodo(updatedTodo);
+    handleCancelEdit();
+  }
+
+
+
   return (
     <>
       <Container>
@@ -189,6 +211,7 @@ const App = () => {
             variant="outlined"
             value={firstname}
             onChange={firstnamechangeHandler}
+            disabled = {editingId !== null}
           />
           <TextField
             id="filled-basic"
@@ -196,6 +219,7 @@ const App = () => {
             variant="outlined"
             value={lastname}
             onChange={lastnamechangeHandler}
+            disabled= {editingId !== null}
           />
           <TextField
             id="standard-basic"
@@ -203,16 +227,37 @@ const App = () => {
             type="number"
             value={age}
             onChange={agechangeHandler}
+            disabled = {editingId !== null}
           />
-          <Checkbox checked={isChecked} onChange={handleChecked} />
-          <Button
-            variant="contained"
-            color="primary"
-            type="submit"
-            sx={{ marginTop: "3rem", cursor: "hover" }}
-          >
+          <Checkbox checked={isChecked} onChange={handleChecked}  disabled = {editingId !== null} />
+          {editingId === null ? (
+              <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              sx={{ marginTop: "3rem", cursor: "hover" }}
+            >
             ADD Details
-          </Button>
+          </Button>):(
+           <div>
+           <Button
+             variant="contained"
+             color="primary"
+             onClick={() => handleSaveEdit(editingId)}
+             sx={{ marginTop: '3rem', cursor: 'hover', marginRight: '1rem' }}
+           >
+             Save
+           </Button>
+           <Button
+             variant="contained"
+             color="secondary"
+             onClick={handleCancelEdit}
+             sx={{ marginTop: '3rem', cursor: 'hover' }}
+           >
+             Cancel
+           </Button>
+         </div>
+       )}
         </Box>
         <Grid>
           <Typography
@@ -244,20 +289,9 @@ const App = () => {
                 <TableHead>
                   <TableRow>
                     <StyledTableCell>id</StyledTableCell>
-                    <StyledTableCell
-                      align="left"
-                      onClick={() => handleSort("firstname")}
-                    >
-                      firstname{" "}
-                      {getSortDirection("firstname") === "asc" && (
-                        <ArrowDropUp sx={{ color: "white" }} fontSize="small" />
-                      )}
-                      {getSortDirection("firstname") === "desc" && (
-                        <ArrowDropDown
-                          sx={{ color: "white" }}
-                          fontSize="small"
-                        />
-                      )}
+                    <StyledTableCell align="left" onClick={() => handleSort("firstname")}>
+                      firstname{" "}{getSortDirection("firstname") === "asc" && (<ArrowDropUp sx={{ color: "white" }} fontSize="small" /> )}
+                                    {getSortDirection("firstname") === "desc" && (<ArrowDropDown sx={{ color: "white" }} fontSize="small"/> )}
                     </StyledTableCell>
 
                     <StyledTableCell
@@ -297,51 +331,73 @@ const App = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sortedTodo?.map((item, id) => (
+                {sortedTodo?.map((item, id) => (
                     <StyledTableRow key={item.id}>
                       <StyledTableCell align="left">{item.id}</StyledTableCell>
                       <StyledTableCell align="left">
-                        {item.firstname}
+                        {editingId === item.id ? (
+                          <TextField
+                            value={firstname}
+                            onChange={firstnamechangeHandler}
+                            disabled={editingId !== item.id}
+                          />
+                        ) : (
+                          item.firstname
+                        )}
                       </StyledTableCell>
                       <StyledTableCell align="left">
-                        {item.lastname}
+                        {editingId === item.id ? (
+                          <TextField
+                            value={lastname}
+                            onChange={lastnamechangeHandler}
+                            disabled={editingId !== item.id}
+                          />
+                        ) : (
+                          item.lastname
+                        )}
                       </StyledTableCell>
-                      <StyledTableCell align="left">{item.age}</StyledTableCell>
                       <StyledTableCell align="left">
-                        <Switch
-                          checked={item.checked}
-                          onChange={() => {
-                            const updatedTodo = todo?.map((todoItem) => {
-                              if (todoItem.id === item.id) {
-                                return {
-                                  ...todoItem,
-                                  checked: !todoItem.checked,
-                                };
-                              }
-                              return todoItem;
-                            });
-                            setTodo(updatedTodo);
-                          }}
-                        />
+                        {editingId === item.id ? (
+                          <TextField
+                            type="number"
+                            value={age}
+                            onChange={agechangeHandler}
+                            disabled={editingId !== item.id}
+                          />
+                        ) : (
+                          item.age
+                        )}
+                      </StyledTableCell>
+                      <StyledTableCell align="left">
+                        {editingId === item.id ? (
+                          <Checkbox
+                            checked={isChecked}
+                            onChange={handleChecked}
+                            disabled={editingId !== item.id}
+                          />
+                        ) : (
+                          item.checked
+                        )}
+                      </StyledTableCell>
+                      <StyledTableCell align="left">
+                        {editingId === item.id ? (
+                          ''
+                        ) : (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleEdit(item.id)}
+                            sx={{ marginRight: '1rem' }}
+                          >
+                            Edit
+                          </Button>
+                        )}
                       </StyledTableCell>
                       <StyledTableCell align="left">
                         <Button
-                          style={{ marginRight: ".5rem" }}
                           variant="contained"
-                          onClick={() => {
-                            console.log('edit has to be implemented here!!!')
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      </StyledTableCell>
-                      <StyledTableCell align="left">
-                        <Button
-                          style={{ marginRight: ".2rem" }}
-                          variant="contained"
-                          onClick={() => {
-                            deleteRow(id);
-                          }}
+                          color="secondary"
+                          onClick={() => deleteRow(id)}
                         >
                           Delete
                         </Button>
@@ -351,19 +407,13 @@ const App = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "2rem",
-              }}
-            >
-              <Pagination
-                count={pageCount}
-                page={page}
-                onChange={handleChangePage}
-              />
-            </Box>
+            <Pagination
+             color="primary"
+              count={pageCount}
+              page={page}
+              onChange={handleChangePage}
+              sx={{justifyContent: 'center',alignItems:'center', margin: '1rem'}}
+            />
           </div>
         </Grid>
       </Container>
